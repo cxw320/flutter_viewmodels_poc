@@ -5,14 +5,19 @@ void main() {
   runApp(RootApp());
 }
 
+abstract class RootAppDependencyProvider {
+  ShoppingCartRepo shoppingCartRepo();
+}
+
 //STEP1) Initialize the root of our widget tree.
 class RootApp extends StatelessWidget {
   //Advantage of using factory method here:
   //We want this to be the public facing constructor that takes in no parameters.
   //Instead, we call the private constructor to pass in dependencies the appRouter may need.
   //In this case, we initialize and pass in ShoppingCartRepo.
-  factory RootApp() {
-    final shoppingCartRepo = ShoppingCartRepo();
+  factory RootApp({RootAppDependencyProvider? dependencyProvider}) {
+    final shoppingCartRepo =
+        dependencyProvider?.shoppingCartRepo() ?? ShoppingCartRepoImpl();
     final appRouter = Router(shoppingCartRepo: shoppingCartRepo);
     return RootApp._(appRouter);
   }
@@ -61,7 +66,7 @@ class Router {
   }
 }
 
-//STEP3: Define our screens! 
+//STEP3: Define our screens!
 //Imagine this is a home screen where someone is browsing through a product catalogue.
 //We may need to still display the items in the shopping cart in the corner.
 class ShoppingScreen extends StatelessWidget {
@@ -112,11 +117,11 @@ class CheckoutScreen extends StatelessWidget {
   }
 }
 
-//STEP4: Define our view models! 
+//STEP4: Define our view models!
 //As a loose rule to help organize our development, think of one viewmodel to organize all data required for one screen
 class CheckoutViewModel {
   //ValueNotifiers correspond to ValueListenableBuilder.
-  //When this shoppingCartCount changes, the widget will rebuild with the latest value. 
+  //When this shoppingCartCount changes, the widget will rebuild with the latest value.
   ValueNotifier<int> shoppingCartCount = ValueNotifier<int>(0);
   final ShoppingCartRepo shoppingCartRepo;
 
@@ -165,9 +170,14 @@ class ShoppingViewModel {
 //STEP5: Let's define our repository with the shared state!
 //This is a singleton repository shared amongst multiple view models
 //The number of items in the cart is updated and kept here
-class ShoppingCartRepo extends ChangeNotifier {
-  var numItemsInCart = 0;
+abstract class ShoppingCartRepo extends ChangeNotifier {
+  int numItemsInCart = 0;
 
+  void updateItemsInCart() {}
+}
+
+class ShoppingCartRepoImpl extends ShoppingCartRepo {
+  @override
   void updateItemsInCart() {
     numItemsInCart += 1;
     notifyListeners();
